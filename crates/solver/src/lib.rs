@@ -75,7 +75,6 @@ impl Face {
         // top->right
         self.0[2] = top[0];
         self.0[5] = top[1];
-
         // right->bottom
         self.0[8] = right[0];
         self.0[7] = right[1];
@@ -276,7 +275,6 @@ impl Cube {
                 self[Right].0[0] = top[0];
                 self[Right].0[3] = top[1];
                 self[Right].0[6] = top[2];
-
                 // right->bottom
                 self[Bottom].0[0] = right[0];
                 self[Bottom].0[1] = right[1];
