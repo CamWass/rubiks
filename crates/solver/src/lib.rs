@@ -33,14 +33,25 @@ use Colour::Red as R;
 use Colour::White as W;
 use Colour::Yellow as Y;
 
+// // Old cube
+// #[rustfmt::skip]
+// static EDGES: [[Edge; 4]; 6] = [
+//     [Edge(White, Red), Edge(White, Green), Edge(White, Orange), Edge(White, Yellow)],
+//     [Edge(Red, Blue), Edge(Red, Yellow), Edge(Red, Orange), Edge(Red, White)],
+//     [Edge(Blue, Red), Edge(Blue, Green), Edge(Blue, Orange), Edge(Blue, Yellow)],
+//     [Edge(Orange, White), Edge(Orange, Green), Edge(Orange, Red), Edge(Orange, Blue)],
+//     [Edge(Green, White), Edge(Green, Blue), Edge(Green, Yellow), Edge(Green, Orange)],
+//     [Edge(Yellow, White), Edge(Yellow, Green), Edge(Yellow, Red), Edge(Yellow, Blue)],
+// ];
+// New cube
 #[rustfmt::skip]
 static EDGES: [[Edge; 4]; 6] = [
-    [Edge(White, Red), Edge(White, Green), Edge(White, Orange), Edge(White, Yellow)],
-    [Edge(Red, Blue), Edge(Red, Yellow), Edge(Red, Orange), Edge(Red, White)],
-    [Edge(Blue, Red), Edge(Blue, Green), Edge(Blue, Orange), Edge(Blue, Yellow)],
-    [Edge(Orange, White), Edge(Orange, Green), Edge(Orange, Red), Edge(Orange, Blue)],
-    [Edge(Green, White), Edge(Green, Blue), Edge(Green, Yellow), Edge(Green, Orange)],
-    [Edge(Yellow, White), Edge(Yellow, Green), Edge(Yellow, Red), Edge(Yellow, Blue)],
+    [Edge(White, Red), Edge(White, Blue), Edge(White, Orange), Edge(White, Green)],
+    [Edge(Red, White), Edge(Red, Blue), Edge(Red, Green), Edge(Red, Yellow)],
+    [Edge(Blue, White), Edge(Blue, Red), Edge(Blue, Orange), Edge(Blue, Yellow)],
+    [Edge(Orange, White), Edge(Orange, Blue), Edge(Orange, Green), Edge(Orange, Yellow)],
+    [Edge(Green, White), Edge(Green, Red), Edge(Green, Orange), Edge(Green, Yellow)],
+    [Edge(Yellow, Red), Edge(Yellow, Blue), Edge(Yellow, Orange), Edge(Yellow, Green)],
 ];
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -58,7 +69,7 @@ use FaceName::*;
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 struct Edge(Colour, Colour);
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 struct Face([Colour; 9]);
 
 impl Face {
@@ -72,21 +83,32 @@ impl Face {
         let bottom = [self.0[7], self.0[8]];
         let left = [self.0[3], self.0[6]];
 
-        // top->right
-        self.0[2] = top[0];
-        self.0[5] = top[1];
-        // right->bottom
-        self.0[8] = right[0];
-        self.0[7] = right[1];
-        // bottom->left
-        self.0[3] = bottom[0];
-        self.0[6] = bottom[1];
-        // left->top
-        self.0[0] = left[1];
-        self.0[1] = left[0];
-
-        if !clockwise {
-            todo!();
+        if clockwise {
+            // top->right
+            self.0[2] = top[0];
+            self.0[5] = top[1];
+            // right->bottom
+            self.0[8] = right[0];
+            self.0[7] = right[1];
+            // bottom->left
+            self.0[3] = bottom[0];
+            self.0[6] = bottom[1];
+            // left->top
+            self.0[0] = left[1];
+            self.0[1] = left[0];
+        } else {
+            // top->left
+            self.0[6] = top[0];
+            self.0[3] = top[1];
+            // left->bottom
+            self.0[7] = left[0];
+            self.0[8] = left[1];
+            // bottom->right
+            self.0[5] = bottom[0];
+            self.0[2] = bottom[1];
+            // right->top
+            self.0[0] = right[0];
+            self.0[1] = right[1];
         }
     }
 }
@@ -162,20 +184,39 @@ impl Display for Cube {
 }
 
 impl Cube {
+    // Old cube
+    /*
     #[rustfmt::skip]
     const SOLVED: Cube = Cube::make_cube([
-                /*Top*/
-                B, B, B,
-                B, B, B,
-                B, B, B,
+              /*Top*/
+              B, B, B,
+              B, B, B,
+              B, B, B,
     /*Left    Front     Right     Back*/
     R, R, R,  Y, Y, Y,  G, G, G,  O, O, O,
     R, R, R,  Y, Y, Y,  G, G, G,  O, O, O,
     R, R, R,  Y, Y, Y,  G, G, G,  O, O, O,
-                /*Bottom*/
-                W, W, W,
-                W, W, W,
-                W, W, W,
+              /*Bottom*/
+              W, W, W,
+              W, W, W,
+              W, W, W,
+    ]);
+    */
+    // New cube
+    #[rustfmt::skip]
+    const SOLVED: Cube = Cube::make_cube([
+              /*Top*/
+              Y, Y, Y,
+              Y, Y, Y,
+              Y, Y, Y,
+    /*Left    Front     Right     Back*/
+    O, O, O,  B, B, B,  R, R, R,  G, G, G,
+    O, O, O,  B, B, B,  R, R, R,  G, G, G,
+    O, O, O,  B, B, B,  R, R, R,  G, G, G,
+              /*Bottom*/
+              W, W, W,
+              W, W, W,
+              W, W, W,
     ]);
 
     #[rustfmt::skip]
@@ -216,12 +257,12 @@ impl Cube {
         }
     }
 
-    fn bottom_colour(&self) -> Colour {
-        self.faces[5].colour()
+    fn face_colour(&self, face: FaceName) -> Colour {
+        self[face].colour()
     }
 
     fn bottom_cross_edges(&self) -> [Edge; 4] {
-        EDGES[self.bottom_colour() as usize]
+        EDGES[self.face_colour(Bottom) as usize]
     }
 
     fn edges(&self) -> impl Iterator<Item = (Edge, Pos)> {
@@ -264,43 +305,216 @@ impl Cube {
     }
 
     fn make_move(&mut self, action: Move) {
-        match action {
-            Move::F => {
-                let top = [self[Top].0[6], self[Top].0[7], self[Top].0[8]];
-                let right = [self[Right].0[0], self[Right].0[3], self[Right].0[6]];
-                let bottom = [self[Bottom].0[0], self[Bottom].0[1], self[Bottom].0[2]];
-                let left = [self[Left].0[2], self[Left].0[5], self[Left].0[8]];
+        /// Side slices are specified: ["Top", "Right", "Bottom", "Left"], relative to the face-to-be-moved.
+        /// For clockwise, slices are rotated: top->right->bottom->left->top
+        /// For anti-clockwise, slices are rotated: top->left->bottom->right->top
+        macro_rules! rotate_sides {
+            (
+                [$top_n:ident, $t1:literal, $t2:literal, $t3:literal],
+                [$right_n:ident, $r1:literal, $r2:literal, $r3:literal],
+                [$bottom_n:ident, $b1:literal, $b2:literal, $b3:literal],
+                [$left_n:ident, $l1:literal, $l2:literal, $l3:literal],
+            ) => {
+                let top = [
+                    self[$top_n].0[$t1],
+                    self[$top_n].0[$t2],
+                    self[$top_n].0[$t3],
+                ];
+                let right = [
+                    self[$right_n].0[$r1],
+                    self[$right_n].0[$r2],
+                    self[$right_n].0[$r3],
+                ];
+                let bottom = [
+                    self[$bottom_n].0[$b1],
+                    self[$bottom_n].0[$b2],
+                    self[$bottom_n].0[$b3],
+                ];
+                let left = [
+                    self[$left_n].0[$l1],
+                    self[$left_n].0[$l2],
+                    self[$left_n].0[$l3],
+                ];
 
                 // top->right
-                self[Right].0[0] = top[0];
-                self[Right].0[3] = top[1];
-                self[Right].0[6] = top[2];
+                self[$right_n].0[$r1] = top[0];
+                self[$right_n].0[$r2] = top[1];
+                self[$right_n].0[$r3] = top[2];
                 // right->bottom
-                self[Bottom].0[0] = right[0];
-                self[Bottom].0[1] = right[1];
-                self[Bottom].0[2] = right[2];
+                self[$bottom_n].0[$b1] = right[0];
+                self[$bottom_n].0[$b2] = right[1];
+                self[$bottom_n].0[$b3] = right[2];
                 // bottom->left
-                self[Left].0[2] = bottom[0];
-                self[Left].0[5] = bottom[1];
-                self[Left].0[8] = bottom[2];
+                self[$left_n].0[$l1] = bottom[0];
+                self[$left_n].0[$l2] = bottom[1];
+                self[$left_n].0[$l3] = bottom[2];
                 // left->top
-                self[Top].0[6] = left[0];
-                self[Top].0[7] = left[1];
-                self[Top].0[8] = left[2];
+                self[$top_n].0[$t1] = left[0];
+                self[$top_n].0[$t2] = left[1];
+                self[$top_n].0[$t3] = left[2];
+            };
+            (
+                AntiClockwise,
+                [$top_n:ident, $t1:literal, $t2:literal, $t3:literal],
+                [$right_n:ident, $r1:literal, $r2:literal, $r3:literal],
+                [$bottom_n:ident, $b1:literal, $b2:literal, $b3:literal],
+                [$left_n:ident, $l1:literal, $l2:literal, $l3:literal],
+            ) => {
+                let top = [
+                    self[$top_n].0[$t1],
+                    self[$top_n].0[$t2],
+                    self[$top_n].0[$t3],
+                ];
+                let right = [
+                    self[$right_n].0[$r1],
+                    self[$right_n].0[$r2],
+                    self[$right_n].0[$r3],
+                ];
+                let bottom = [
+                    self[$bottom_n].0[$b1],
+                    self[$bottom_n].0[$b2],
+                    self[$bottom_n].0[$b3],
+                ];
+                let left = [
+                    self[$left_n].0[$l1],
+                    self[$left_n].0[$l2],
+                    self[$left_n].0[$l3],
+                ];
 
+                // top->left
+                self[$left_n].0[$l1] = top[2];
+                self[$left_n].0[$l2] = top[1];
+                self[$left_n].0[$l3] = top[0];
+                // left->bottom
+                self[$bottom_n].0[$b1] = left[0];
+                self[$bottom_n].0[$b2] = left[1];
+                self[$bottom_n].0[$b3] = left[2];
+                // bottom->right
+                self[$right_n].0[$r1] = bottom[2];
+                self[$right_n].0[$r2] = bottom[1];
+                self[$right_n].0[$r3] = bottom[0];
+                // right->top
+                self[$top_n].0[$t1] = right[0];
+                self[$top_n].0[$t2] = right[1];
+                self[$top_n].0[$t3] = right[2];
+            };
+        }
+
+        match action {
+            Move::F => {
+                rotate_sides!(
+                    [Top, 6, 7, 8],
+                    [Right, 0, 3, 6],
+                    [Bottom, 0, 1, 2],
+                    [Left, 2, 5, 8],
+                );
                 self[Front].rotate(true);
             }
-            Move::B => todo!(),
-            Move::U => todo!(),
-            Move::D => todo!(),
-            Move::L => todo!(),
-            Move::R => todo!(),
-            Move::FP => todo!(),
-            Move::BP => todo!(),
-            Move::UP => todo!(),
-            Move::DP => todo!(),
-            Move::LP => todo!(),
-            Move::RP => todo!(),
+            Move::B => {
+                rotate_sides!(
+                    [Top, 0, 1, 2],
+                    [Left, 0, 3, 6],
+                    [Bottom, 6, 7, 8],
+                    [Right, 2, 5, 8],
+                );
+                self[Back].rotate(true);
+            }
+            Move::U => {
+                rotate_sides!(
+                    [Back, 0, 1, 2],
+                    [Right, 0, 1, 2],
+                    [Front, 0, 1, 2],
+                    [Left, 0, 1, 2],
+                );
+                self[Top].rotate(true);
+            }
+            Move::D => {
+                rotate_sides!(
+                    [Front, 6, 7, 8],
+                    [Right, 6, 7, 8],
+                    [Back, 6, 7, 8],
+                    [Left, 6, 7, 8],
+                );
+                self[Bottom].rotate(true);
+            }
+            Move::L => {
+                rotate_sides!(
+                    [Top, 0, 3, 6],
+                    [Front, 0, 3, 6],
+                    [Bottom, 0, 3, 6],
+                    [Back, 2, 5, 8],
+                );
+                self[Left].rotate(true);
+            }
+            Move::R => {
+                rotate_sides!(
+                    [Top, 8, 5, 2],
+                    [Back, 0, 3, 6],
+                    [Bottom, 2, 5, 8],
+                    [Front, 2, 5, 8],
+                );
+                self[Right].rotate(true);
+            }
+            Move::FP => {
+                rotate_sides!(
+                    AntiClockwise,
+                    [Top, 6, 7, 8],
+                    [Right, 0, 3, 6],
+                    [Bottom, 0, 1, 2],
+                    [Left, 2, 5, 8],
+                );
+                self[Front].rotate(false);
+            }
+            Move::BP => {
+                rotate_sides!(
+                    AntiClockwise,
+                    [Top, 0, 1, 2],
+                    [Left, 0, 3, 6],
+                    [Bottom, 6, 7, 8],
+                    [Right, 2, 5, 8],
+                );
+                self[Back].rotate(false);
+            }
+            Move::UP => {
+                rotate_sides!(
+                    AntiClockwise,
+                    [Back, 0, 1, 2],
+                    [Right, 0, 1, 2],
+                    [Front, 0, 1, 2],
+                    [Left, 0, 1, 2],
+                );
+                self[Top].rotate(false);
+            }
+            Move::DP => {
+                rotate_sides!(
+                    AntiClockwise,
+                    [Front, 6, 7, 8],
+                    [Right, 6, 7, 8],
+                    [Back, 6, 7, 8],
+                    [Left, 6, 7, 8],
+                );
+                self[Bottom].rotate(false);
+            }
+            Move::LP => {
+                rotate_sides!(
+                    AntiClockwise,
+                    [Top, 0, 3, 6],
+                    [Front, 0, 3, 6],
+                    [Bottom, 0, 3, 6],
+                    [Back, 2, 5, 8],
+                );
+                self[Left].rotate(false);
+            }
+            Move::RP => {
+                rotate_sides!(
+                    AntiClockwise,
+                    [Top, 8, 5, 2],
+                    [Back, 0, 3, 6],
+                    [Bottom, 2, 5, 8],
+                    [Front, 2, 5, 8],
+                );
+                self[Right].rotate(false);
+            }
         }
     }
 }
@@ -338,12 +552,161 @@ pub enum Move {
 
 impl Move {
     fn reverse(&self) -> Self {
-        todo!()
+        match self {
+            Self::F => Self::FP,
+            Self::B => Self::BP,
+            Self::U => Self::UP,
+            Self::D => Self::DP,
+            Self::L => Self::LP,
+            Self::R => Self::RP,
+
+            Self::FP => Self::F,
+            Self::BP => Self::B,
+            Self::UP => Self::U,
+            Self::DP => Self::D,
+            Self::LP => Self::L,
+            Self::RP => Self::R,
+        }
     }
 }
 
+const fn make_identity_map() -> [u8; 54] {
+    let mut result = [0; 54];
+    let mut i = 0;
+    while i < 54 {
+        result[i as usize] = i;
+        i += 1;
+    }
+    result
+}
+const POS_IDENTITY_MAP: [u8; 54] = make_identity_map();
+
 fn update_pos_after_move(pos: &mut Pos, action: Move) {
-    todo!();
+    macro_rules! make_map {
+        ($move:ident, $anti_move:ident, $move_var:ident, $anti_move_var:ident, [$($s:literal=>$t:literal $(,)?)+]) => {
+            static $move_var: [u8; 54] = {
+                const fn mk() -> [u8; 54]{
+                    let mut map = POS_IDENTITY_MAP;
+                    $(map[$s] = $t;)+
+                    map
+                }
+                mk()
+            };
+            static $anti_move_var: [u8; 54] = {
+                const fn mk() -> [u8; 54]{
+                    let mut map = POS_IDENTITY_MAP;
+                    $(map[$s] = $t;)+
+                    map
+                }
+                mk()
+            };
+        };
+        (AntiClockwise, $($m:ident, [$($s:literal=>$t:literal,)+])+) => {
+            {
+                let mut map = POS_IDENTITY_MAP;
+                $(map[$s] = $t;)+
+                map
+            }
+        };
+    }
+    make_map!(F, FP, F_MAP, FP_MAP, [
+        6 => 8,
+        7 => 16,
+        8 => 26,
+        15 => 7,
+        16 => 25,
+        24 => 6,
+        25 => 15,
+        26 => 24,
+    ]);
+    make_map!(B, BP, B_MAP, BP_MAP, [
+        0 => 2,
+        1 => 11,
+        2 => 20,
+        9 => 1,
+        11 => 19,
+        18 => 0,
+        19 => 9,
+        20 => 18,
+    ]);
+    make_map!(U, UP, U_MAP, UP_MAP, [
+        0 => 2,
+        1 => 5,
+        2 => 8,
+        3 => 1,
+        5 => 7,
+        6 => 0,
+        7 => 3,
+        8 => 6,
+    ]);
+    make_map!(D, P, D_MAP, DP_MAP, [
+        18 => 20,
+        19 => 23,
+        20 => 26,
+        21 => 19,
+        23 => 25,
+        24 => 18,
+        25 => 21,
+        26 => 24,
+    ]);
+    make_map!(L, LP, L_MAP, LP_MAP, [
+        0 => 6,
+        3 => 15,
+        6 => 24,
+        9 => 3,
+        15 => 21,
+        18 => 0,
+        21 => 9,
+        24 => 18,
+    ]);
+    make_map!(R, RP, R_MAP, RP_MAP, [
+        2 => 20,
+        5 => 11,
+        8 => 2,
+        11 => 23,
+        17 => 5,
+        20 => 26,
+        23 => 17,
+        26 => 8,
+    ]);
+    match action {
+        Move::F => {
+            *pos = F_MAP[*pos as usize];
+        }
+        Move::B => {
+            *pos = B_MAP[*pos as usize];
+        }
+        Move::U => {
+            *pos = U_MAP[*pos as usize];
+        }
+        Move::D => {
+            *pos = D_MAP[*pos as usize];
+        }
+        Move::L => {
+            *pos = L_MAP[*pos as usize];
+        }
+        Move::R => {
+            *pos = R_MAP[*pos as usize];
+        }
+        Move::FP => {
+            *pos = FP_MAP[*pos as usize];
+        }
+        Move::BP => {
+            *pos = BP_MAP[*pos as usize];
+        }
+        Move::UP => {
+            *pos = UP_MAP[*pos as usize];
+        }
+        Move::DP => {
+            *pos = DP_MAP[*pos as usize];
+        }
+        Move::LP => {
+            *pos = LP_MAP[*pos as usize];
+        }
+        Move::RP => {
+            *pos = RP_MAP[*pos as usize];
+        }
+    }
 }
 
 struct Solver {
@@ -357,11 +720,7 @@ impl Solver {
         self.move_stack.push(action);
     }
 
-    fn move_bottom_cross_edge(&mut self, mut source: Pos, target: Pos) {
-        if source == target {
-            return;
-        }
-
+    fn move_bottom_cross_edge(&mut self, mut source: Pos, edge: Edge) {
         // Move to top layer
         {
             let cur_layer = source / 9;
@@ -450,21 +809,89 @@ impl Solver {
                 _ => unreachable!(),
             }
         }
+
+        let top_face_pos = source % 9;
+
+        if self.cube[Top].0[top_face_pos as usize] == self.cube.face_colour(Bottom) {
+            // Bottom colour is facing up on the edge.
+
+            let non_bottom_colour = if edge.0 == self.cube.face_colour(Bottom) {
+                edge.1
+            } else {
+                edge.0
+            };
+
+            let target = if non_bottom_colour == self.cube.face_colour(Back) {
+                0
+            } else if non_bottom_colour == self.cube.face_colour(Right) {
+                1
+            } else if non_bottom_colour == self.cube.face_colour(Front) {
+                2
+            } else if non_bottom_colour == self.cube.face_colour(Left) {
+                3
+            } else {
+                unreachable!();
+            };
+
+            let cur = match top_face_pos {
+                1 => 0,
+                3 => 3,
+                5 => 1,
+                7 => 2,
+                _ => unreachable!(),
+            };
+
+            let mut num_moves = target - cur;
+
+            if num_moves == 3 {
+                num_moves = -1;
+            } else if num_moves == -3 {
+                num_moves = 1;
+            }
+
+            let action = if num_moves < 0 { Move::UP } else { Move::U };
+
+            for _ in 0..i32::abs(num_moves) {
+                self.make_move(action);
+                update_pos_after_move(&mut source, action);
+            }
+
+            let target_face_move = if non_bottom_colour == self.cube.face_colour(Back) {
+                Move::B
+            } else if non_bottom_colour == self.cube.face_colour(Right) {
+                Move::R
+            } else if non_bottom_colour == self.cube.face_colour(Front) {
+                Move::F
+            } else if non_bottom_colour == self.cube.face_colour(Left) {
+                Move::L
+            } else {
+                unreachable!();
+            };
+
+            self.make_move(target_face_move);
+            update_pos_after_move(&mut source, target_face_move);
+            self.make_move(target_face_move);
+            update_pos_after_move(&mut source, target_face_move);
+        } else {
+            // Bottom colour is facing out on the edge.
+            todo!();
+        }
         // TODO: expose insertion slot
         // TODO: insert into slot
         // TODO: restore insertion slot
 
-        todo!();
+        // todo!();
     }
 
     fn solve_bottom_cross(&mut self) {
         for target_edge in self.cube.bottom_cross_edges() {
             let cur_pos = self.cube.find_edge(target_edge);
             let target_pos = Cube::SOLVED.find_edge(target_edge);
-            self.move_bottom_cross_edge(cur_pos, target_pos);
+            if cur_pos == target_pos {
+                continue;
+            }
+            self.move_bottom_cross_edge(cur_pos, target_edge);
         }
-
-        todo!();
     }
 }
 
@@ -473,10 +900,252 @@ pub fn solve(cube: Cube) -> Vec<Move> {
         cube,
         move_stack: Vec::new(),
     };
-    // solver.solve_bottom_cross();
     println!("{}", solver.cube);
-    solver.make_move(Move::F);
+    solver.solve_bottom_cross();
     println!("{}", solver.cube);
 
     solver.move_stack
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // Using new cube
+
+    fn test_move(m: Move, output: [Colour; 54]) {
+        let mut input = Cube::SOLVED;
+        input.make_move(m);
+        let output = Cube::make_cube(output).faces;
+        assert!(input.faces == output);
+    }
+
+    #[test]
+    fn test_F() {
+        #[rustfmt::skip]
+        let output = [
+                  /*Top*/
+                  Y, Y, Y,
+                  Y, Y, Y,
+                  O, O, O,
+        /*Left    Front     Right     Back*/
+        O, O, W,  B, B, B,  Y, R, R,  G, G, G,
+        O, O, W,  B, B, B,  Y, R, R,  G, G, G,
+        O, O, W,  B, B, B,  Y, R, R,  G, G, G,
+                  /*Bottom*/
+                  R, R, R,
+                  W, W, W,
+                  W, W, W,
+        ];
+        test_move(Move::F, output);
+    }
+    #[test]
+    fn test_B() {
+        #[rustfmt::skip]
+        let output = [
+                  /*Top*/
+                  R, R, R,
+                  Y, Y, Y,
+                  Y, Y, Y,
+        /*Left    Front     Right     Back*/
+        Y, O, O,  B, B, B,  R, R, W,  G, G, G,
+        Y, O, O,  B, B, B,  R, R, W,  G, G, G,
+        Y, O, O,  B, B, B,  R, R, W,  G, G, G,
+                  /*Bottom*/
+                  W, W, W,
+                  W, W, W,
+                  O, O, O,
+        ];
+        test_move(Move::B, output);
+    }
+    #[test]
+    fn test_U() {
+        #[rustfmt::skip]
+        let output = [
+                  /*Top*/
+                  Y, Y, Y,
+                  Y, Y, Y,
+                  Y, Y, Y,
+        /*Left    Front     Right     Back*/
+        B, B, B,  R, R, R,  G, G, G,  O, O, O,
+        O, O, O,  B, B, B,  R, R, R,  G, G, G,
+        O, O, O,  B, B, B,  R, R, R,  G, G, G,
+                  /*Bottom*/
+                  W, W, W,
+                  W, W, W,
+                  W, W, W,
+        ];
+        test_move(Move::U, output);
+    }
+    #[test]
+    fn test_D() {
+        #[rustfmt::skip]
+        let output = [
+                  /*Top*/
+                  Y, Y, Y,
+                  Y, Y, Y,
+                  Y, Y, Y,
+        /*Left    Front     Right     Back*/
+        O, O, O,  B, B, B,  R, R, R,  G, G, G,
+        O, O, O,  B, B, B,  R, R, R,  G, G, G,
+        G, G, G,  O, O, O,  B, B, B,  R, R, R,
+                  /*Bottom*/
+                  W, W, W,
+                  W, W, W,
+                  W, W, W,
+        ];
+        test_move(Move::D, output);
+    }
+    #[test]
+    fn test_L() {
+        #[rustfmt::skip]
+        let output = [
+                  /*Top*/
+                  G, Y, Y,
+                  G, Y, Y,
+                  G, Y, Y,
+        /*Left    Front     Right     Back*/
+        O, O, O,  Y, B, B,  R, R, R,  G, G, W,
+        O, O, O,  Y, B, B,  R, R, R,  G, G, W,
+        O, O, O,  Y, B, B,  R, R, R,  G, G, W,
+                  /*Bottom*/
+                  B, W, W,
+                  B, W, W,
+                  B, W, W,
+        ];
+        test_move(Move::L, output);
+    }
+    #[test]
+    fn test_R() {
+        #[rustfmt::skip]
+        let output = [
+                  /*Top*/
+                  Y, Y, B,
+                  Y, Y, B,
+                  Y, Y, B,
+        /*Left    Front     Right     Back*/
+        O, O, O,  B, B, W,  R, R, R,  Y, G, G,
+        O, O, O,  B, B, W,  R, R, R,  Y, G, G,
+        O, O, O,  B, B, W,  R, R, R,  Y, G, G,
+                  /*Bottom*/
+                  W, W, G,
+                  W, W, G,
+                  W, W, G,
+        ];
+        test_move(Move::R, output);
+    }
+    #[test]
+    fn test_FP() {
+        #[rustfmt::skip]
+        let output = [
+                  /*Top*/
+                  Y, Y, Y,
+                  Y, Y, Y,
+                  R, R, R,
+        /*Left    Front     Right     Back*/
+        O, O, Y,  B, B, B,  W, R, R,  G, G, G,
+        O, O, Y,  B, B, B,  W, R, R,  G, G, G,
+        O, O, Y,  B, B, B,  W, R, R,  G, G, G,
+                  /*Bottom*/
+                  O, O, O,
+                  W, W, W,
+                  W, W, W,
+        ];
+        test_move(Move::FP, output);
+    }
+    #[test]
+    fn test_BP() {
+        #[rustfmt::skip]
+        let output = [
+                  /*Top*/
+                  O, O, O,
+                  Y, Y, Y,
+                  Y, Y, Y,
+        /*Left    Front     Right     Back*/
+        W, O, O,  B, B, B,  R, R, Y,  G, G, G,
+        W, O, O,  B, B, B,  R, R, Y,  G, G, G,
+        W, O, O,  B, B, B,  R, R, Y,  G, G, G,
+                  /*Bottom*/
+                  W, W, W,
+                  W, W, W,
+                  R, R, R,
+        ];
+        test_move(Move::BP, output);
+    }
+    #[test]
+    fn test_UP() {
+        #[rustfmt::skip]
+        let output = [
+                  /*Top*/
+                  Y, Y, Y,
+                  Y, Y, Y,
+                  Y, Y, Y,
+        /*Left    Front     Right     Back*/
+        G, G, G,  O, O, O,  B, B, B,  R, R, R,
+        O, O, O,  B, B, B,  R, R, R,  G, G, G,
+        O, O, O,  B, B, B,  R, R, R,  G, G, G,
+                  /*Bottom*/
+                  W, W, W,
+                  W, W, W,
+                  W, W, W,
+        ];
+        test_move(Move::UP, output);
+    }
+    #[test]
+    fn test_DP() {
+        #[rustfmt::skip]
+        let output = [
+                  /*Top*/
+                  Y, Y, Y,
+                  Y, Y, Y,
+                  Y, Y, Y,
+        /*Left    Front     Right     Back*/
+        O, O, O,  B, B, B,  R, R, R,  G, G, G,
+        O, O, O,  B, B, B,  R, R, R,  G, G, G,
+        B, B, B,  R, R, R,  G, G, G,  O, O, O,
+                  /*Bottom*/
+                  W, W, W,
+                  W, W, W,
+                  W, W, W,
+        ];
+        test_move(Move::DP, output);
+    }
+    #[test]
+    fn test_LP() {
+        #[rustfmt::skip]
+        let output = [
+                  /*Top*/
+                  B, Y, Y,
+                  B, Y, Y,
+                  B, Y, Y,
+        /*Left    Front     Right     Back*/
+        O, O, O,  W, B, B,  R, R, R,  G, G, Y,
+        O, O, O,  W, B, B,  R, R, R,  G, G, Y,
+        O, O, O,  W, B, B,  R, R, R,  G, G, Y,
+                  /*Bottom*/
+                  G, W, W,
+                  G, W, W,
+                  G, W, W,
+        ];
+        test_move(Move::LP, output);
+    }
+    #[test]
+    fn test_RP() {
+        #[rustfmt::skip]
+        let output = [
+                  /*Top*/
+                  Y, Y, G,
+                  Y, Y, G,
+                  Y, Y, G,
+        /*Left    Front     Right     Back*/
+        O, O, O,  B, B, Y,  R, R, R,  W, G, G,
+        O, O, O,  B, B, Y,  R, R, R,  W, G, G,
+        O, O, O,  B, B, Y,  R, R, R,  W, G, G,
+                  /*Bottom*/
+                  W, W, B,
+                  W, W, B,
+                  W, W, B,
+        ];
+        test_move(Move::RP, output);
+    }
 }
