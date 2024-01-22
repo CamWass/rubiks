@@ -186,14 +186,21 @@ impl Index<FaceName> for Cube {
     }
 }
 
-fn solve_bottom_cross(cube: &mut Cube) {
-    for target_edge in cube.bottom_cross_edges() {
-        let cur_pos = cube.find_edge(target_edge);
-        let target_pos = Cube::SOLVED.find_edge(target_edge);
-        dbg!(cur_pos, target_pos);
+struct Solver {
+    cube: Cube,
+}
+
+impl Solver {
+    fn solve_bottom_cross(&mut self) {
+        for target_edge in self.cube.bottom_cross_edges() {
+            let cur_pos = self.cube.find_edge(target_edge);
+            let target_pos = Cube::SOLVED.find_edge(target_edge);
+            dbg!(cur_pos, target_pos);
+        }
     }
 }
 
-pub fn solve(mut cube: Cube) {
-    solve_bottom_cross(&mut cube);
+pub fn solve(cube: Cube) {
+    let mut solver = Solver { cube };
+    solver.solve_bottom_cross();
 }
