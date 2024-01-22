@@ -26,5 +26,7 @@ fn main() {
                 W, W, O,
     ]);
 
-    solve(cube);
+    let moves = solve(cube);
+    println!("Moves: {:#?}", moves);
+    println!("Number of moves: {}", moves.len());
 }

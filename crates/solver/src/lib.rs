@@ -1,3 +1,6 @@
+use std::fmt::{Display, Write};
+use std::ops::{Index, IndexMut};
+
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug)]
 pub enum Colour {
     White,
@@ -8,7 +11,18 @@ pub enum Colour {
     Yellow,
 }
 
-use std::ops::Index;
+impl Display for Colour {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            White => f.write_str("W"),
+            Red => f.write_str("R"),
+            Blue => f.write_str("B"),
+            Orange => f.write_str("O"),
+            Green => f.write_str("G"),
+            Yellow => f.write_str("Y"),
+        }
+    }
+}
 
 use Colour::*;
 
@@ -51,28 +65,101 @@ impl Face {
     fn colour(&self) -> Colour {
         self.0[4]
     }
+
+    fn rotate(&mut self, clockwise: bool) {
+        let top = [self.0[0], self.0[1]];
+        let right = [self.0[2], self.0[5]];
+        let bottom = [self.0[7], self.0[8]];
+        let left = [self.0[3], self.0[6]];
+
+        // top->right
+        self.0[2] = top[0];
+        self.0[5] = top[1];
+
+        // right->bottom
+        self.0[8] = right[0];
+        self.0[7] = right[1];
+        // bottom->left
+        self.0[3] = bottom[0];
+        self.0[6] = bottom[1];
+        // left->top
+        self.0[0] = left[1];
+        self.0[1] = left[0];
+
+        if !clockwise {
+            todo!();
+        }
+    }
 }
 
 type Pos = u8;
 
+/*
+       Top
+       X X X
+       X X X
+       X X X
+Left   Front  Right  Back
+X X X  X X X  X X X  X X X
+X X X  X X X  X X X  X X X
+X X X  X X X  X X X  X X X
+       Bottom
+       X X X
+       X X X
+       X X X
+*/
 #[derive(Debug)]
 pub struct Cube {
     // top, left, front, right, back, bottom
-    /*
-           Top
-           X X X
-           X X X
-           X X X
-    Left   Front  Right  Back
-    X X X  X X X  X X X  X X X
-    X X X  X X X  X X X  X X X
-    X X X  X X X  X X X  X X X
-           Bottom
-           X X X
-           X X X
-           X X X
-        */
     faces: [Face; 6],
+}
+
+impl Display for Cube {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("       Top\n")?;
+        f.write_fmt(format_args!(
+            "       {} {} {}\n",
+            self[Top].0[0], self[Top].0[1], self[Top].0[2]
+        ))?;
+        f.write_fmt(format_args!(
+            "       {} {} {}\n",
+            self[Top].0[3], self[Top].0[4], self[Top].0[5]
+        ))?;
+        f.write_fmt(format_args!(
+            "       {} {} {}\n",
+            self[Top].0[6], self[Top].0[7], self[Top].0[8]
+        ))?;
+        f.write_str("Left   Front  Right  Back\n")?;
+        for row in 0..3 {
+            for (i, face) in self.faces[1..5].iter().enumerate() {
+                for col in 0..3 {
+                    let idx = row * 3 + col;
+                    f.write_fmt(format_args!("{}", face.0[idx]))?;
+                    if col != 3 && i != 4 {
+                        f.write_char(' ')?;
+                    }
+                }
+                if i != 4 {
+                    f.write_char(' ')?;
+                }
+            }
+            f.write_char('\n')?;
+        }
+        f.write_str("       Bottom\n")?;
+        f.write_fmt(format_args!(
+            "       {} {} {}\n",
+            self[Bottom].0[0], self[Bottom].0[1], self[Bottom].0[2]
+        ))?;
+        f.write_fmt(format_args!(
+            "       {} {} {}\n",
+            self[Bottom].0[3], self[Bottom].0[4], self[Bottom].0[5]
+        ))?;
+        f.write_fmt(format_args!(
+            "       {} {} {}\n",
+            self[Bottom].0[6], self[Bottom].0[7], self[Bottom].0[8]
+        ))?;
+        Ok(())
+    }
 }
 
 impl Cube {
@@ -176,6 +263,48 @@ impl Cube {
     fn find_edge(&self, edge: Edge) -> Pos {
         self.edges().find(|e| e.0 == edge).unwrap().1
     }
+
+    fn make_move(&mut self, action: Move) {
+        match action {
+            Move::F => {
+                let top = [self[Top].0[6], self[Top].0[7], self[Top].0[8]];
+                let right = [self[Right].0[0], self[Right].0[3], self[Right].0[6]];
+                let bottom = [self[Bottom].0[0], self[Bottom].0[1], self[Bottom].0[2]];
+                let left = [self[Left].0[2], self[Left].0[5], self[Left].0[8]];
+
+                // top->right
+                self[Right].0[0] = top[0];
+                self[Right].0[3] = top[1];
+                self[Right].0[6] = top[2];
+
+                // right->bottom
+                self[Bottom].0[0] = right[0];
+                self[Bottom].0[1] = right[1];
+                self[Bottom].0[2] = right[2];
+                // bottom->left
+                self[Left].0[2] = bottom[0];
+                self[Left].0[5] = bottom[1];
+                self[Left].0[8] = bottom[2];
+                // left->top
+                self[Top].0[6] = left[0];
+                self[Top].0[7] = left[1];
+                self[Top].0[8] = left[2];
+
+                self[Front].rotate(true);
+            }
+            Move::B => todo!(),
+            Move::U => todo!(),
+            Move::D => todo!(),
+            Move::L => todo!(),
+            Move::R => todo!(),
+            Move::FP => todo!(),
+            Move::BP => todo!(),
+            Move::UP => todo!(),
+            Move::DP => todo!(),
+            Move::LP => todo!(),
+            Move::RP => todo!(),
+        }
+    }
 }
 
 impl Index<FaceName> for Cube {
@@ -186,21 +315,170 @@ impl Index<FaceName> for Cube {
     }
 }
 
+impl IndexMut<FaceName> for Cube {
+    fn index_mut(&mut self, index: FaceName) -> &mut Self::Output {
+        &mut self.faces[index as usize]
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum Move {
+    F,
+    B,
+    U,
+    D,
+    L,
+    R,
+
+    FP,
+    BP,
+    UP,
+    DP,
+    LP,
+    RP,
+}
+
+impl Move {
+    fn reverse(&self) -> Self {
+        todo!()
+    }
+}
+
+fn update_pos_after_move(pos: &mut Pos, action: Move) {
+    todo!();
+}
+
 struct Solver {
     cube: Cube,
+    move_stack: Vec<Move>,
 }
 
 impl Solver {
+    fn make_move(&mut self, action: Move) {
+        self.cube.make_move(action);
+        self.move_stack.push(action);
+    }
+
+    fn move_bottom_cross_edge(&mut self, mut source: Pos, target: Pos) {
+        if source == target {
+            return;
+        }
+
+        // Move to top layer
+        {
+            let cur_layer = source / 9;
+            match cur_layer {
+                0 => {
+                    // Already in top layer
+                }
+                1 => {
+                    // Middle layer
+                    match source {
+                        9 => {
+                            self.make_move(Move::L);
+                            update_pos_after_move(&mut source, Move::L);
+                        }
+                        11 => {
+                            self.make_move(Move::RP);
+                            update_pos_after_move(&mut source, Move::RP);
+                        }
+                        15 => {
+                            self.make_move(Move::L);
+                            update_pos_after_move(&mut source, Move::L);
+                        }
+                        17 => {
+                            self.make_move(Move::R);
+                            update_pos_after_move(&mut source, Move::R);
+                        }
+                        _ => unreachable!(),
+                    }
+                }
+                2 => {
+                    // Bottom layer
+                    match source {
+                        19 => {
+                            self.make_move(Move::B);
+                            update_pos_after_move(&mut source, Move::B);
+                            self.make_move(Move::B);
+                            update_pos_after_move(&mut source, Move::B);
+                        }
+                        21 => {
+                            self.make_move(Move::L);
+                            update_pos_after_move(&mut source, Move::L);
+                            self.make_move(Move::L);
+                            update_pos_after_move(&mut source, Move::L);
+                        }
+                        23 => {
+                            self.make_move(Move::R);
+                            update_pos_after_move(&mut source, Move::R);
+                            self.make_move(Move::R);
+                            update_pos_after_move(&mut source, Move::R);
+                        }
+                        25 => {
+                            self.make_move(Move::F);
+                            update_pos_after_move(&mut source, Move::F);
+                            self.make_move(Move::F);
+                            update_pos_after_move(&mut source, Move::F);
+                        }
+                        _ => unreachable!(),
+                    }
+                }
+                _ => unreachable!(),
+            }
+            // Move target piece out of the way.
+            match cur_layer {
+                0 => {}
+                1 | 2 => {
+                    self.make_move(Move::U);
+                    update_pos_after_move(&mut source, Move::U);
+                }
+                _ => unreachable!(),
+            }
+            // Restore sides.
+            match cur_layer {
+                0 => {}
+                1 => {
+                    let m = self.move_stack[self.move_stack.len() - 2];
+                    self.make_move(m.reverse());
+                    update_pos_after_move(&mut source, m.reverse());
+                }
+                2 => {
+                    let m = self.move_stack[self.move_stack.len() - 2];
+                    self.make_move(m.reverse());
+                    update_pos_after_move(&mut source, m.reverse());
+                    self.make_move(m.reverse());
+                    update_pos_after_move(&mut source, m.reverse());
+                }
+                _ => unreachable!(),
+            }
+        }
+        // TODO: expose insertion slot
+        // TODO: insert into slot
+        // TODO: restore insertion slot
+
+        todo!();
+    }
+
     fn solve_bottom_cross(&mut self) {
         for target_edge in self.cube.bottom_cross_edges() {
             let cur_pos = self.cube.find_edge(target_edge);
             let target_pos = Cube::SOLVED.find_edge(target_edge);
-            dbg!(cur_pos, target_pos);
+            self.move_bottom_cross_edge(cur_pos, target_pos);
         }
+
+        todo!();
     }
 }
 
-pub fn solve(cube: Cube) {
-    let mut solver = Solver { cube };
-    solver.solve_bottom_cross();
+pub fn solve(cube: Cube) -> Vec<Move> {
+    let mut solver = Solver {
+        cube,
+        move_stack: Vec::new(),
+    };
+    // solver.solve_bottom_cross();
+    println!("{}", solver.cube);
+    solver.make_move(Move::F);
+    println!("{}", solver.cube);
+
+    solver.move_stack
 }
