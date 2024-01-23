@@ -710,7 +710,6 @@ impl Solver {
         }
 
         let top_face_pos = source % 9;
-
         if self.cube[Top].0[top_face_pos as usize] == self.cube.face_colour(Bottom) {
             // Bottom colour is facing up on the edge.
 
@@ -773,13 +772,12 @@ impl Solver {
             update_pos_after_move(&mut source, target_face_move);
         } else {
             // Bottom colour is facing out on the edge.
+
+            // TODO: expose insertion slot
+            // TODO: insert into slot
+            // TODO: restore insertion slot
             todo!();
         }
-        // TODO: expose insertion slot
-        // TODO: insert into slot
-        // TODO: restore insertion slot
-
-        // todo!();
     }
 
     fn solve_bottom_cross(&mut self) {
@@ -820,7 +818,7 @@ mod tests {
     }
 
     #[test]
-    fn test_F() {
+    fn test_front() {
         #[rustfmt::skip]
         let output = [
                   /*Top*/
@@ -839,7 +837,7 @@ mod tests {
         test_move(Move::F, output);
     }
     #[test]
-    fn test_B() {
+    fn test_back() {
         #[rustfmt::skip]
         let output = [
                   /*Top*/
@@ -858,7 +856,7 @@ mod tests {
         test_move(Move::B, output);
     }
     #[test]
-    fn test_U() {
+    fn test_up() {
         #[rustfmt::skip]
         let output = [
                   /*Top*/
@@ -877,7 +875,7 @@ mod tests {
         test_move(Move::U, output);
     }
     #[test]
-    fn test_D() {
+    fn test_down() {
         #[rustfmt::skip]
         let output = [
                   /*Top*/
@@ -896,7 +894,7 @@ mod tests {
         test_move(Move::D, output);
     }
     #[test]
-    fn test_L() {
+    fn test_left() {
         #[rustfmt::skip]
         let output = [
                   /*Top*/
@@ -915,7 +913,7 @@ mod tests {
         test_move(Move::L, output);
     }
     #[test]
-    fn test_R() {
+    fn test_right() {
         #[rustfmt::skip]
         let output = [
                   /*Top*/
@@ -934,7 +932,7 @@ mod tests {
         test_move(Move::R, output);
     }
     #[test]
-    fn test_FP() {
+    fn test_front_prime() {
         #[rustfmt::skip]
         let output = [
                   /*Top*/
@@ -953,7 +951,7 @@ mod tests {
         test_move(Move::FP, output);
     }
     #[test]
-    fn test_BP() {
+    fn test_back_prime() {
         #[rustfmt::skip]
         let output = [
                   /*Top*/
@@ -972,7 +970,7 @@ mod tests {
         test_move(Move::BP, output);
     }
     #[test]
-    fn test_UP() {
+    fn test_up_prime() {
         #[rustfmt::skip]
         let output = [
                   /*Top*/
@@ -991,7 +989,7 @@ mod tests {
         test_move(Move::UP, output);
     }
     #[test]
-    fn test_DP() {
+    fn test_down_prime() {
         #[rustfmt::skip]
         let output = [
                   /*Top*/
@@ -1010,7 +1008,7 @@ mod tests {
         test_move(Move::DP, output);
     }
     #[test]
-    fn test_LP() {
+    fn test_left_prime() {
         #[rustfmt::skip]
         let output = [
                   /*Top*/
@@ -1029,7 +1027,7 @@ mod tests {
         test_move(Move::LP, output);
     }
     #[test]
-    fn test_RP() {
+    fn test_right_prime() {
         #[rustfmt::skip]
         let output = [
                   /*Top*/
