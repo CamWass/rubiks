@@ -310,212 +310,116 @@ impl Cube {
         /// For anti-clockwise, slices are rotated: top->left->bottom->right->top
         macro_rules! rotate_sides {
             (
-                [$top_n:ident, $t1:literal, $t2:literal, $t3:literal],
-                [$right_n:ident, $r1:literal, $r2:literal, $r3:literal],
-                [$bottom_n:ident, $b1:literal, $b2:literal, $b3:literal],
-                [$left_n:ident, $l1:literal, $l2:literal, $l3:literal],
+                $([
+                    $clock:ident, $anti_clock:ident, $face:ident,
+                    [$top:ident, $t1:literal, $t2:literal, $t3:literal],
+                    [$right:ident, $r1:literal, $r2:literal, $r3:literal],
+                    [$bottom:ident, $b1:literal, $b2:literal, $b3:literal],
+                    [$left:ident, $l1:literal, $l2:literal, $l3:literal],
+                ],)+
             ) => {
-                let top = [
-                    self[$top_n].0[$t1],
-                    self[$top_n].0[$t2],
-                    self[$top_n].0[$t3],
-                ];
-                let right = [
-                    self[$right_n].0[$r1],
-                    self[$right_n].0[$r2],
-                    self[$right_n].0[$r3],
-                ];
-                let bottom = [
-                    self[$bottom_n].0[$b1],
-                    self[$bottom_n].0[$b2],
-                    self[$bottom_n].0[$b3],
-                ];
-                let left = [
-                    self[$left_n].0[$l1],
-                    self[$left_n].0[$l2],
-                    self[$left_n].0[$l3],
-                ];
+                match action {
+                    $(
+                        Move::$clock => {
+                            let top = [self[$top].0[$t1], self[$top].0[$t2], self[$top].0[$t3]];
+                            let right = [self[$right].0[$r1], self[$right].0[$r2], self[$right].0[$r3]];
+                            let bottom = [self[$bottom].0[$b1], self[$bottom].0[$b2], self[$bottom].0[$b3]];
+                            let left = [self[$left].0[$l1], self[$left].0[$l2], self[$left].0[$l3]];
 
-                // top->right
-                self[$right_n].0[$r1] = top[0];
-                self[$right_n].0[$r2] = top[1];
-                self[$right_n].0[$r3] = top[2];
-                // right->bottom
-                self[$bottom_n].0[$b1] = right[0];
-                self[$bottom_n].0[$b2] = right[1];
-                self[$bottom_n].0[$b3] = right[2];
-                // bottom->left
-                self[$left_n].0[$l1] = bottom[0];
-                self[$left_n].0[$l2] = bottom[1];
-                self[$left_n].0[$l3] = bottom[2];
-                // left->top
-                self[$top_n].0[$t1] = left[0];
-                self[$top_n].0[$t2] = left[1];
-                self[$top_n].0[$t3] = left[2];
-            };
-            (
-                AntiClockwise,
-                [$top_n:ident, $t1:literal, $t2:literal, $t3:literal],
-                [$right_n:ident, $r1:literal, $r2:literal, $r3:literal],
-                [$bottom_n:ident, $b1:literal, $b2:literal, $b3:literal],
-                [$left_n:ident, $l1:literal, $l2:literal, $l3:literal],
-            ) => {
-                let top = [
-                    self[$top_n].0[$t1],
-                    self[$top_n].0[$t2],
-                    self[$top_n].0[$t3],
-                ];
-                let right = [
-                    self[$right_n].0[$r1],
-                    self[$right_n].0[$r2],
-                    self[$right_n].0[$r3],
-                ];
-                let bottom = [
-                    self[$bottom_n].0[$b1],
-                    self[$bottom_n].0[$b2],
-                    self[$bottom_n].0[$b3],
-                ];
-                let left = [
-                    self[$left_n].0[$l1],
-                    self[$left_n].0[$l2],
-                    self[$left_n].0[$l3],
-                ];
+                            // top->right
+                            self[$right].0[$r1] = top[0];
+                            self[$right].0[$r2] = top[1];
+                            self[$right].0[$r3] = top[2];
+                            // right->bottom
+                            self[$bottom].0[$b1] = right[0];
+                            self[$bottom].0[$b2] = right[1];
+                            self[$bottom].0[$b3] = right[2];
+                            // bottom->left
+                            self[$left].0[$l1] = bottom[0];
+                            self[$left].0[$l2] = bottom[1];
+                            self[$left].0[$l3] = bottom[2];
+                            // left->top
+                            self[$top].0[$t1] = left[0];
+                            self[$top].0[$t2] = left[1];
+                            self[$top].0[$t3] = left[2];
 
-                // top->left
-                self[$left_n].0[$l1] = top[2];
-                self[$left_n].0[$l2] = top[1];
-                self[$left_n].0[$l3] = top[0];
-                // left->bottom
-                self[$bottom_n].0[$b1] = left[0];
-                self[$bottom_n].0[$b2] = left[1];
-                self[$bottom_n].0[$b3] = left[2];
-                // bottom->right
-                self[$right_n].0[$r1] = bottom[2];
-                self[$right_n].0[$r2] = bottom[1];
-                self[$right_n].0[$r3] = bottom[0];
-                // right->top
-                self[$top_n].0[$t1] = right[0];
-                self[$top_n].0[$t2] = right[1];
-                self[$top_n].0[$t3] = right[2];
+                            self[$face].rotate(true);
+                        }
+                        Move::$anti_clock => {
+                            let top = [self[$top].0[$t1], self[$top].0[$t2], self[$top].0[$t3]];
+                            let right = [self[$right].0[$r1], self[$right].0[$r2], self[$right].0[$r3]];
+                            let bottom = [self[$bottom].0[$b1], self[$bottom].0[$b2], self[$bottom].0[$b3]];
+                            let left = [self[$left].0[$l1], self[$left].0[$l2], self[$left].0[$l3]];
+
+                            // top->left
+                            self[$left].0[$l1] = top[2];
+                            self[$left].0[$l2] = top[1];
+                            self[$left].0[$l3] = top[0];
+                            // left->bottom
+                            self[$bottom].0[$b1] = left[0];
+                            self[$bottom].0[$b2] = left[1];
+                            self[$bottom].0[$b3] = left[2];
+                            // bottom->right
+                            self[$right].0[$r1] = bottom[2];
+                            self[$right].0[$r2] = bottom[1];
+                            self[$right].0[$r3] = bottom[0];
+                            // right->top
+                            self[$top].0[$t1] = right[0];
+                            self[$top].0[$t2] = right[1];
+                            self[$top].0[$t3] = right[2];
+
+                            self[$face].rotate(false);
+                        }
+                    )+
+                }
             };
         }
 
-        match action {
-            Move::F => {
-                rotate_sides!(
-                    [Top, 6, 7, 8],
-                    [Right, 0, 3, 6],
-                    [Bottom, 0, 1, 2],
-                    [Left, 2, 5, 8],
-                );
-                self[Front].rotate(true);
-            }
-            Move::B => {
-                rotate_sides!(
-                    [Top, 0, 1, 2],
-                    [Left, 0, 3, 6],
-                    [Bottom, 6, 7, 8],
-                    [Right, 2, 5, 8],
-                );
-                self[Back].rotate(true);
-            }
-            Move::U => {
-                rotate_sides!(
-                    [Back, 0, 1, 2],
-                    [Right, 0, 1, 2],
-                    [Front, 0, 1, 2],
-                    [Left, 0, 1, 2],
-                );
-                self[Top].rotate(true);
-            }
-            Move::D => {
-                rotate_sides!(
-                    [Front, 6, 7, 8],
-                    [Right, 6, 7, 8],
-                    [Back, 6, 7, 8],
-                    [Left, 6, 7, 8],
-                );
-                self[Bottom].rotate(true);
-            }
-            Move::L => {
-                rotate_sides!(
-                    [Top, 0, 3, 6],
-                    [Front, 0, 3, 6],
-                    [Bottom, 0, 3, 6],
-                    [Back, 2, 5, 8],
-                );
-                self[Left].rotate(true);
-            }
-            Move::R => {
-                rotate_sides!(
-                    [Top, 8, 5, 2],
-                    [Back, 0, 3, 6],
-                    [Bottom, 2, 5, 8],
-                    [Front, 2, 5, 8],
-                );
-                self[Right].rotate(true);
-            }
-            Move::FP => {
-                rotate_sides!(
-                    AntiClockwise,
-                    [Top, 6, 7, 8],
-                    [Right, 0, 3, 6],
-                    [Bottom, 0, 1, 2],
-                    [Left, 2, 5, 8],
-                );
-                self[Front].rotate(false);
-            }
-            Move::BP => {
-                rotate_sides!(
-                    AntiClockwise,
-                    [Top, 0, 1, 2],
-                    [Left, 0, 3, 6],
-                    [Bottom, 6, 7, 8],
-                    [Right, 2, 5, 8],
-                );
-                self[Back].rotate(false);
-            }
-            Move::UP => {
-                rotate_sides!(
-                    AntiClockwise,
-                    [Back, 0, 1, 2],
-                    [Right, 0, 1, 2],
-                    [Front, 0, 1, 2],
-                    [Left, 0, 1, 2],
-                );
-                self[Top].rotate(false);
-            }
-            Move::DP => {
-                rotate_sides!(
-                    AntiClockwise,
-                    [Front, 6, 7, 8],
-                    [Right, 6, 7, 8],
-                    [Back, 6, 7, 8],
-                    [Left, 6, 7, 8],
-                );
-                self[Bottom].rotate(false);
-            }
-            Move::LP => {
-                rotate_sides!(
-                    AntiClockwise,
-                    [Top, 0, 3, 6],
-                    [Front, 0, 3, 6],
-                    [Bottom, 0, 3, 6],
-                    [Back, 2, 5, 8],
-                );
-                self[Left].rotate(false);
-            }
-            Move::RP => {
-                rotate_sides!(
-                    AntiClockwise,
-                    [Top, 8, 5, 2],
-                    [Back, 0, 3, 6],
-                    [Bottom, 2, 5, 8],
-                    [Front, 2, 5, 8],
-                );
-                self[Right].rotate(false);
-            }
-        }
+        #[rustfmt::skip]
+        rotate_sides!(
+            [
+                F, FP, Front,
+                [Top, 6, 7, 8],
+                [Right, 0, 3, 6],
+                [Bottom, 0, 1, 2],
+                [Left, 2, 5, 8],
+            ],
+            [
+                B, BP, Back,
+                [Top, 0, 1, 2],
+                [Left, 0, 3, 6],
+                [Bottom, 6, 7, 8],
+                [Right, 2, 5, 8],
+            ],
+            [
+                U, UP, Top,
+                [Back, 0, 1, 2],
+                [Right, 0, 1, 2],
+                [Front, 0, 1, 2],
+                [Left, 0, 1, 2],
+            ],
+            [
+                D, DP, Bottom,
+                [Front, 6, 7, 8],
+                [Right, 6, 7, 8],
+                [Back, 6, 7, 8],
+                [Left, 6, 7, 8],
+            ],
+            [
+                L, LP, Left,
+                [Top, 0, 3, 6],
+                [Front, 0, 3, 6],
+                [Bottom, 0, 3, 6],
+                [Back, 2, 5, 8],
+            ],
+            [
+                R, RP, Right,
+                [Top, 8, 5, 2],
+                [Back, 0, 3, 6],
+                [Bottom, 2, 5, 8],
+                [Front, 2, 5, 8],
+            ],
+        );
     }
 }
 
