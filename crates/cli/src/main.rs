@@ -1,4 +1,4 @@
-use solver::{solve, Colour, Cube};
+use solver::*;
 
 use Colour::Blue as B;
 use Colour::Green as G;
@@ -65,7 +65,20 @@ fn main() {
                   W, Y, W,
     ]);
 
-    let moves = solve(cube2);
+    // New cube
+    // Start with solved cube, blue front, white bottom.
+    #[rustfmt::skip]
+    let cube3 = {
+        let mut c = Cube::SOLVED;
+        c.make_move(Move::R);
+        c.make_move(Move::FP);
+        c.make_move(Move::U);
+        c.make_move(Move::F);
+        c.make_move(Move::RP);
+        c
+    };
+
+    let moves = solve(cube3);
     println!("Moves: {:#?}", moves);
     println!("Number of moves: {}", moves.len());
 }
