@@ -622,6 +622,22 @@ impl Solver {
         self.move_stack.push(action);
     }
 
+    fn move_top_edge(&mut self, source: u8, target: u8) {
+        let mut num_moves = target as i32 - source as i32;
+
+        if num_moves == 3 {
+            num_moves = -1;
+        } else if num_moves == -3 {
+            num_moves = 1;
+        }
+
+        let action = if num_moves < 0 { Move::UP } else { Move::U };
+
+        for _ in 0..i32::abs(num_moves) {
+            self.make_move(action);
+        }
+    }
+
     fn move_bottom_cross_edge(&mut self, mut source: Pos, edge: Edge) {
         // Move to top layer
         {
@@ -699,14 +715,11 @@ impl Solver {
                 1 => {
                     let m = self.move_stack[self.move_stack.len() - 2];
                     self.make_move(m.reverse());
-                    update_pos_after_move(&mut source, m.reverse());
                 }
                 2 => {
                     let m = self.move_stack[self.move_stack.len() - 2];
                     self.make_move(m.reverse());
-                    update_pos_after_move(&mut source, m.reverse());
                     self.make_move(m.reverse());
-                    update_pos_after_move(&mut source, m.reverse());
                 }
                 _ => unreachable!(),
             }
@@ -734,104 +747,50 @@ impl Solver {
         if self.cube[Top].0[top_face_pos as usize] == self.cube.face_colour(Bottom) {
             // Bottom colour is facing up on the edge.
 
-            let target_edge_idx = if non_bottom_colour == self.cube.face_colour(Back) {
-                0
-            } else if non_bottom_colour == self.cube.face_colour(Right) {
-                1
-            } else if non_bottom_colour == self.cube.face_colour(Front) {
-                2
-            } else if non_bottom_colour == self.cube.face_colour(Left) {
-                3
-            } else {
-                unreachable!();
-            };
+            let (target_edge_idx, target_face_move) =
+                if non_bottom_colour == self.cube.face_colour(Back) {
+                    (0, Move::B)
+                } else if non_bottom_colour == self.cube.face_colour(Right) {
+                    (1, Move::R)
+                } else if non_bottom_colour == self.cube.face_colour(Front) {
+                    (2, Move::F)
+                } else if non_bottom_colour == self.cube.face_colour(Left) {
+                    (3, Move::L)
+                } else {
+                    unreachable!();
+                };
 
-            let mut num_moves = target_edge_idx - cur_edge_idx;
-
-            if num_moves == 3 {
-                num_moves = -1;
-            } else if num_moves == -3 {
-                num_moves = 1;
-            }
-
-            let action = if num_moves < 0 { Move::UP } else { Move::U };
-
-            for _ in 0..i32::abs(num_moves) {
-                self.make_move(action);
-                update_pos_after_move(&mut source, action);
-            }
-
-            let target_face_move = if non_bottom_colour == self.cube.face_colour(Back) {
-                Move::B
-            } else if non_bottom_colour == self.cube.face_colour(Right) {
-                Move::R
-            } else if non_bottom_colour == self.cube.face_colour(Front) {
-                Move::F
-            } else if non_bottom_colour == self.cube.face_colour(Left) {
-                Move::L
-            } else {
-                unreachable!();
-            };
+            self.move_top_edge(cur_edge_idx, target_edge_idx);
 
             self.make_move(target_face_move);
-            update_pos_after_move(&mut source, target_face_move);
             self.make_move(target_face_move);
-            update_pos_after_move(&mut source, target_face_move);
         } else {
             // Bottom colour is facing out on the edge.
 
+            let (target_edge_idx, insert_move, target_face_move) =
+                if non_bottom_colour == self.cube.face_colour(Back) {
+                    (1, Move::R, Move::BP)
+                } else if non_bottom_colour == self.cube.face_colour(Right) {
+                    (2, Move::F, Move::RP)
+                } else if non_bottom_colour == self.cube.face_colour(Front) {
+                    (1, Move::RP, Move::F)
+                } else if non_bottom_colour == self.cube.face_colour(Left) {
+                    (2, Move::FP, Move::L)
+                } else {
+                    unreachable!();
+                };
+
             // spin top so edge is adjacent to target face
-
-            let (target_edge_idx, insert_move) = if non_bottom_colour == self.cube.face_colour(Back)
-            {
-                (1, Move::R)
-            } else if non_bottom_colour == self.cube.face_colour(Right) {
-                (2, Move::F)
-            } else if non_bottom_colour == self.cube.face_colour(Front) {
-                (1, Move::RP)
-            } else if non_bottom_colour == self.cube.face_colour(Left) {
-                (2, Move::FP)
-            } else {
-                unreachable!();
-            };
-
-            let mut num_moves = target_edge_idx - cur_edge_idx;
-
-            if num_moves == 3 {
-                num_moves = -1;
-            } else if num_moves == -3 {
-                num_moves = 1;
-            }
-
-            let action = if num_moves < 0 { Move::UP } else { Move::U };
-
-            for _ in 0..i32::abs(num_moves) {
-                self.make_move(action);
-                update_pos_after_move(&mut source, action);
-            }
+            self.move_top_edge(cur_edge_idx, target_edge_idx);
 
             // rotate face edge is on towards target face
             self.make_move(insert_move);
-            update_pos_after_move(&mut source, insert_move);
 
             // rotate target face down to insert edge into final position
-            let target_face_move = if non_bottom_colour == self.cube.face_colour(Back) {
-                Move::BP
-            } else if non_bottom_colour == self.cube.face_colour(Right) {
-                Move::RP
-            } else if non_bottom_colour == self.cube.face_colour(Front) {
-                Move::F
-            } else if non_bottom_colour == self.cube.face_colour(Left) {
-                Move::L
-            } else {
-                unreachable!();
-            };
             self.make_move(target_face_move);
-            update_pos_after_move(&mut source, target_face_move);
 
             // restore adjacent face
             self.make_move(insert_move.reverse());
-            update_pos_after_move(&mut source, insert_move.reverse());
         }
     }
 
