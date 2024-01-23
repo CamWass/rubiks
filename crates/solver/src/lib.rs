@@ -486,131 +486,126 @@ const fn make_identity_map() -> [u8; 54] {
 const POS_IDENTITY_MAP: [u8; 54] = make_identity_map();
 
 fn update_pos_after_move(pos: &mut Pos, action: Move) {
-    macro_rules! make_map {
-        ($move:ident, $anti_move:ident, $move_var:ident, $anti_move_var:ident, [$($s:literal=>$t:literal $(,)?)+]) => {
-            static $move_var: [u8; 54] = {
-                const fn mk() -> [u8; 54]{
-                    let mut map = POS_IDENTITY_MAP;
-                    $(map[$s] = $t;)+
-                    map
-                }
-                mk()
-            };
-            static $anti_move_var: [u8; 54] = {
-                const fn mk() -> [u8; 54]{
-                    let mut map = POS_IDENTITY_MAP;
-                    $(map[$s] = $t;)+
-                    map
-                }
-                mk()
-            };
-        };
-        (AntiClockwise, $($m:ident, [$($s:literal=>$t:literal,)+])+) => {
-            {
-                let mut map = POS_IDENTITY_MAP;
-                $(map[$s] = $t;)+
-                map
+    macro_rules! make_maps {
+        (
+            $(
+                [
+                    $move:ident, $anti_move:ident,
+                    [$($s:literal=>$t:literal,)+]
+                ],
+            )+
+        ) => {
+            match action {
+                $(
+                    Move::$move => {
+                        static MAP: [u8; 54] = {
+                            const fn mk() -> [u8; 54]{
+                                let mut map = POS_IDENTITY_MAP;
+                                $(map[$s] = $t;)+
+                                map
+                            }
+                            mk()
+                        };
+                        *pos = MAP[*pos as usize];
+                    }
+                    Move::$anti_move => {
+                        static MAP: [u8; 54] = {
+                            const fn mk() -> [u8; 54]{
+                                let mut map = POS_IDENTITY_MAP;
+                                $(map[$s] = $t;)+
+                                map
+                            }
+                            mk()
+                        };
+                        *pos = MAP[*pos as usize];
+                    }
+                )+
             }
+
+
         };
     }
-    make_map!(F, FP, F_MAP, FP_MAP, [
-        6 => 8,
-        7 => 16,
-        8 => 26,
-        15 => 7,
-        16 => 25,
-        24 => 6,
-        25 => 15,
-        26 => 24,
-    ]);
-    make_map!(B, BP, B_MAP, BP_MAP, [
-        0 => 2,
-        1 => 11,
-        2 => 20,
-        9 => 1,
-        11 => 19,
-        18 => 0,
-        19 => 9,
-        20 => 18,
-    ]);
-    make_map!(U, UP, U_MAP, UP_MAP, [
-        0 => 2,
-        1 => 5,
-        2 => 8,
-        3 => 1,
-        5 => 7,
-        6 => 0,
-        7 => 3,
-        8 => 6,
-    ]);
-    make_map!(D, P, D_MAP, DP_MAP, [
-        18 => 20,
-        19 => 23,
-        20 => 26,
-        21 => 19,
-        23 => 25,
-        24 => 18,
-        25 => 21,
-        26 => 24,
-    ]);
-    make_map!(L, LP, L_MAP, LP_MAP, [
-        0 => 6,
-        3 => 15,
-        6 => 24,
-        9 => 3,
-        15 => 21,
-        18 => 0,
-        21 => 9,
-        24 => 18,
-    ]);
-    make_map!(R, RP, R_MAP, RP_MAP, [
-        2 => 20,
-        5 => 11,
-        8 => 2,
-        11 => 23,
-        17 => 5,
-        20 => 26,
-        23 => 17,
-        26 => 8,
-    ]);
-    match action {
-        Move::F => {
-            *pos = F_MAP[*pos as usize];
-        }
-        Move::B => {
-            *pos = B_MAP[*pos as usize];
-        }
-        Move::U => {
-            *pos = U_MAP[*pos as usize];
-        }
-        Move::D => {
-            *pos = D_MAP[*pos as usize];
-        }
-        Move::L => {
-            *pos = L_MAP[*pos as usize];
-        }
-        Move::R => {
-            *pos = R_MAP[*pos as usize];
-        }
-        Move::FP => {
-            *pos = FP_MAP[*pos as usize];
-        }
-        Move::BP => {
-            *pos = BP_MAP[*pos as usize];
-        }
-        Move::UP => {
-            *pos = UP_MAP[*pos as usize];
-        }
-        Move::DP => {
-            *pos = DP_MAP[*pos as usize];
-        }
-        Move::LP => {
-            *pos = LP_MAP[*pos as usize];
-        }
-        Move::RP => {
-            *pos = RP_MAP[*pos as usize];
-        }
-    }
+    #[rustfmt::skip]
+    make_maps!(
+        [
+            F, FP,
+            [
+                6 => 8,
+                7 => 16,
+                8 => 26,
+                15 => 7,
+                16 => 25,
+                24 => 6,
+                25 => 15,
+                26 => 24,
+            ]
+        ],
+        [
+            B, BP,
+            [
+                0 => 2,
+                1 => 11,
+                2 => 20,
+                9 => 1,
+                11 => 19,
+                18 => 0,
+                19 => 9,
+                20 => 18,
+            ]
+        ],
+        [
+            U, UP,
+            [
+                0 => 2,
+                1 => 5,
+                2 => 8,
+                3 => 1,
+                5 => 7,
+                6 => 0,
+                7 => 3,
+                8 => 6,
+            ]
+        ],
+        [
+            D, DP,
+            [
+                18 => 20,
+                19 => 23,
+                20 => 26,
+                21 => 19,
+                23 => 25,
+                24 => 18,
+                25 => 21,
+                26 => 24,
+            ]
+        ],
+        [
+            L, LP,
+            [
+                0 => 6,
+                3 => 15,
+                6 => 24,
+                9 => 3,
+                15 => 21,
+                18 => 0,
+                21 => 9,
+                24 => 18,
+            ]
+        ],
+        [
+            R, RP,
+            [
+                2 => 20,
+                5 => 11,
+                8 => 2,
+                11 => 23,
+                17 => 5,
+                20 => 26,
+                23 => 17,
+                26 => 8,
+            ]
+        ],
+    );
 }
 
 struct Solver {
